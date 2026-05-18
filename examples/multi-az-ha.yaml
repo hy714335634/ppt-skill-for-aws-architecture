@@ -1,0 +1,246 @@
+# Multi-AZ high-availability web application (replicates reference image 2).
+# Two AZs with parallel Service A / Service B + RDS master + replica per AZ,
+# fronted by a single ALB. Side services (ElastiCache, OpenSearch, S3, EFS).
+title: ""
+theme: dark
+layout: manual
+
+groups:
+  - id: cloud
+    kind: aws-cloud-alt
+    label: "AWS Cloud  (US)"
+    show_icon: true
+    x: 1.50
+    y: 0.30
+    w: 11.65
+    h: 6.95
+
+  - id: vpc
+    kind: vpc
+    label: "VPC"
+    x: 1.85
+    y: 0.85
+    w: 11.20
+    h: 6.30
+
+  # AZ a (top row of subnets)
+  - id: az_a_label
+    kind: custom
+    label: "Availability Zone a"
+    border_color: "00B7E9"
+    border_style: dash
+    label_color: "00B7E9"
+    label_italic: false
+    show_icon: false
+    x: 3.95
+    y: 1.10
+    w: 9.00
+    h: 0.30
+
+  # Public subnet (NAT GW)
+  - id: pub_a
+    kind: public-subnet
+    label: "Public subnet"
+    x: 2.05
+    y: 1.55
+    w: 1.85
+    h: 1.85
+  # Private subnet — Service A in AZ a
+  - id: priv_a_svc_a
+    kind: private-subnet
+    label: "Private subnet"
+    x: 4.00
+    y: 1.55
+    w: 2.30
+    h: 1.85
+  # Private subnet — RDS master Service A
+  - id: priv_a_rds_a
+    kind: private-subnet
+    label: "Private subnet"
+    x: 6.40
+    y: 1.55
+    w: 2.30
+    h: 1.85
+  # Private subnet — Service B
+  - id: priv_a_svc_b
+    kind: private-subnet
+    label: "Private subnet"
+    x: 8.80
+    y: 1.55
+    w: 2.05
+    h: 1.85
+  # Private subnet — RDS master Service B
+  - id: priv_a_rds_b
+    kind: private-subnet
+    label: "Private subnet"
+    x: 10.95
+    y: 1.55
+    w: 2.05
+    h: 1.85
+
+  # ASG overlays for Service A and Service B in AZ a
+  - id: asg_a_svc_a
+    kind: auto-scaling-group
+    label: "Auto Scaling Group"
+    spans: [priv_a_svc_a]
+    border_color: "ED7100"
+    border_style: dash
+    label_color: "ED7100"
+    label_italic: true
+    show_icon: false
+    pad: 0.30
+  - id: asg_a_svc_b
+    kind: auto-scaling-group
+    label: "Auto Scaling Group"
+    spans: [priv_a_svc_b]
+    border_color: "ED7100"
+    border_style: dash
+    label_color: "ED7100"
+    label_italic: true
+    show_icon: false
+    pad: 0.30
+
+  # AZ b
+  - id: az_b_label
+    kind: custom
+    label: "Availability Zone b"
+    border_color: "00B7E9"
+    border_style: dash
+    label_color: "00B7E9"
+    label_italic: false
+    show_icon: false
+    x: 3.95
+    y: 3.55
+    w: 9.00
+    h: 0.30
+
+  - id: pub_b
+    kind: public-subnet
+    label: "Public subnet"
+    x: 2.05
+    y: 4.00
+    w: 1.85
+    h: 1.85
+    show_icon: true
+  - id: priv_b_svc_a
+    kind: private-subnet
+    label: "Private subnet"
+    x: 4.00
+    y: 4.00
+    w: 2.30
+    h: 1.85
+  - id: priv_b_rds_a
+    kind: private-subnet
+    label: "Private subnet"
+    x: 6.40
+    y: 4.00
+    w: 2.30
+    h: 1.85
+  - id: priv_b_svc_b
+    kind: private-subnet
+    label: "Private subnet"
+    x: 8.80
+    y: 4.00
+    w: 2.05
+    h: 1.85
+  - id: priv_b_rds_b
+    kind: private-subnet
+    label: "Private subnet"
+    x: 10.95
+    y: 4.00
+    w: 2.05
+    h: 1.85
+
+  # S3 + EFS dashed orange highlight (data archive cluster)
+  - id: data_archive
+    kind: custom
+    label: "Data archive"
+    border_color: "ED7100"
+    border_style: dash
+    label_color: "ED7100"
+    label_italic: true
+    show_icon: false
+    x: 7.05
+    y: 6.05
+    w: 2.40
+    h: 1.05
+
+nodes:
+  # Outside cloud — geo DNS users
+  - { id: dns,    icon: route53,    label: "GEO DNS",            x: 0.10, y: 0.40, size: 0.72 }
+  - { id: users,  icon: users,      label: "US Users",           x: 0.10, y: 1.50, size: 0.65 }
+  - { id: cf,     icon: cloudfront, label: "Amazon\nCloudFront", x: 0.10, y: 2.55, size: 0.70 }
+  - { id: waf,    icon: waf,        label: "AWS WAF",            x: 0.10, y: 3.95, size: 0.70 }
+  - { id: ops,    icon: client,     label: "Ops",                x: 0.10, y: 6.20, size: 0.70 }
+
+  # Public subnet — IGW + NAT (top of az_a) and ALB
+  - { id: igw,    icon: internet-gateway, label: "Internet\nGateway (IGW)", x: 1.55, y: 2.55, size: 0.65 }
+  - { id: nat,    icon: nat-gateway,      label: "VPC NAT\nGateway",        x: 2.50, y: 1.95, size: 0.70, group: pub_a }
+  - { id: alb,    icon: alb,              label: "Application Load\nBalancer", x: 2.50, y: 4.40, size: 0.70, group: pub_b }
+
+  # AZ a service nodes
+  - { id: svc_a_a, icon: ec2,        label: "Service A",       x: 4.65, y: 1.95, size: 0.70, group: priv_a_svc_a }
+  - { id: rds_master_a, icon: rds,   label: "Amazon RDS\nMaster", x: 7.05, y: 1.95, size: 0.70, group: priv_a_rds_a }
+  - { id: svc_b_a, icon: ec2,        label: "Service B",       x: 9.20, y: 1.95, size: 0.70, group: priv_a_svc_b }
+  - { id: rds_master_b, icon: rds,   label: "Amazon RDS\nMaster", x: 11.30, y: 1.95, size: 0.70, group: priv_a_rds_b }
+
+  # AZ b service nodes
+  - { id: svc_a_b, icon: ec2,        label: "Service A",       x: 4.65, y: 4.40, size: 0.70, group: priv_b_svc_a }
+  - { id: rds_replica_a, icon: rds,  label: "Amazon RDS\nReplica slave", x: 7.05, y: 4.40, size: 0.70, group: priv_b_rds_a }
+  - { id: svc_b_b, icon: ec2,        label: "Service B",       x: 9.20, y: 4.40, size: 0.70, group: priv_b_svc_b }
+  - { id: rds_replica_b, icon: rds,  label: "Amazon RDS\nReplica slave", x: 11.30, y: 4.40, size: 0.70, group: priv_b_rds_b }
+
+  # Bottom external services
+  - { id: opensearch, icon: opensearch,     label: "Amazon\nOpensearch\nService",     x: 4.20, y: 6.30, size: 0.65 }
+  - { id: redis_a,    icon: elasticache,    label: "ElastiCache for Redis",            x: 5.65, y: 6.30, size: 0.65 }
+  - { id: s3,         icon: s3,             label: "Amazon S3",                        x: 7.20, y: 6.20, size: 0.65 }
+  - { id: efs,        icon: efs,            label: "Amazon Elastic\nFile System",      x: 8.55, y: 6.20, size: 0.65 }
+  - { id: redis_b,    icon: elasticache,    label: "ElastiCache for Redis",            x: 10.10, y: 6.30, size: 0.65 }
+
+  # VPN
+  - { id: vpngw,   icon: vpn-gateway,    label: "VPN gateway",   x: 1.55, y: 4.95, size: 0.55 }
+  - { id: vpnconn, icon: client-vpn,     label: "VPN\nconnection", x: 2.55, y: 6.20, size: 0.55 }
+
+edges:
+  # Front
+  - { from: dns, to: users, direction: "<->", style: solid }
+  - { from: users, to: cf, direction: "<->", style: solid }
+  - { from: cf, to: igw, routing: orthogonal, from_anchor: right, to_anchor: left }
+  - { from: waf, to: cf, direction: "-" }
+  - { from: ops, to: vpnconn, direction: "-", routing: orthogonal, from_anchor: right, to_anchor: left }
+  - { from: vpnconn, to: vpngw, routing: orthogonal, from_anchor: top, to_anchor: bottom }
+  - { from: igw, to: alb, routing: orthogonal, from_anchor: bottom, to_anchor: left }
+
+  # ALB to services with URL Path labels
+  - { from: alb, to: svc_a_a, label: "URL Path:/Service A", label_color: "FF9900", label_italic: true, label_bg: transparent,
+      label_position: 0.45, routing: orthogonal, from_anchor: right, to_anchor: left }
+  - { from: alb, to: svc_b_a, label: "URL Path:/Service B", label_color: "FF9900", label_italic: true, label_bg: transparent,
+      label_position: 0.6, routing: orthogonal, from_anchor: right, to_anchor: left }
+  - { from: alb, to: svc_a_b, routing: orthogonal, from_anchor: right, to_anchor: left }
+  - { from: alb, to: svc_b_b, routing: orthogonal, from_anchor: right, to_anchor: left }
+
+  # Service A -> RDS master A
+  - { from: svc_a_a, to: rds_master_a, color: "39FF14" }
+  - { from: svc_a_b, to: rds_master_a, color: "39FF14" }
+  # Service B -> RDS master B
+  - { from: svc_b_a, to: rds_master_b, color: "39FF14" }
+  - { from: svc_b_b, to: rds_master_b, color: "39FF14" }
+
+  # RDS master -> replica (HA replication)
+  - { from: rds_master_a, to: rds_replica_a, style: dash, color: "EB6F6F", label: "HA deploy",
+      label_color: "ED7100", label_italic: true, label_bg: transparent }
+  - { from: rds_master_b, to: rds_replica_b, style: dash, color: "EB6F6F", label: "HA deploy",
+      label_color: "ED7100", label_italic: true, label_bg: transparent }
+
+  # Service A -> OpenSearch (full-text search)
+  - { from: svc_a_b, to: opensearch, label: "Search", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, direction: "<->", routing: orthogonal, from_anchor: bottom, to_anchor: top }
+  # Service A -> Redis (web cache)
+  - { from: svc_a_b, to: redis_a, label: "Web cache", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, direction: "<->", routing: orthogonal, from_anchor: bottom, to_anchor: top }
+  # Service B -> S3/EFS (storage / archive)
+  - { from: svc_b_b, to: s3,  routing: orthogonal, from_anchor: bottom, to_anchor: top, direction: "<->" }
+  - { from: svc_b_b, to: efs, routing: orthogonal, from_anchor: bottom, to_anchor: top, direction: "<->" }
+  # Service B -> Redis B (web cache)
+  - { from: svc_b_b, to: redis_b, label: "Web cache", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, direction: "<->", routing: orthogonal, from_anchor: bottom, to_anchor: top }

@@ -1,0 +1,72 @@
+# Serverless REST API — single-region, fully managed.
+title: "Serverless REST API"
+subtitle: "API Gateway + Lambda + DynamoDB"
+description: "Cognito-authenticated REST API; Lambda backed by DynamoDB; events fan-out to SQS for async processing."
+theme: dark
+layout: auto
+
+groups:
+  - id: cloud
+    kind: aws-cloud
+    label: "AWS Cloud"
+    direction: column
+  - id: api_tier
+    kind: default
+    label: "Sync request path"
+    parent: cloud
+    direction: row
+  - id: async_tier
+    kind: default
+    label: "Async pipeline"
+    parent: cloud
+    direction: row
+
+nodes:
+  - id: client
+    icon: client
+    label: "Client App"
+
+  - id: auth
+    icon: cognito
+    label: "Cognito"
+    sublabel: "User Pool"
+    group: api_tier
+
+  - id: api
+    icon: apigateway
+    label: "API Gateway"
+    group: api_tier
+
+  - id: handler
+    icon: lambda
+    label: "API Handler"
+    group: api_tier
+
+  - id: table
+    icon: dynamodb
+    label: "Items Table"
+    group: api_tier
+
+  - id: queue
+    icon: sqs
+    label: "Events Queue"
+    group: async_tier
+
+  - id: worker
+    icon: lambda
+    label: "Async Worker"
+    group: async_tier
+
+  - id: notifications
+    icon: sns
+    label: "Notifications"
+    group: async_tier
+
+edges:
+  - { from: client, to: api, label: "https" }
+  - { from: client, to: auth, label: "sign-in", style: dash }
+  - { from: api, to: handler }
+  - { from: handler, to: table, direction: "<->" }
+  - { from: handler, to: queue, label: "publish" }
+  - { from: queue, to: worker }
+  - { from: worker, to: notifications, label: "fan-out" }

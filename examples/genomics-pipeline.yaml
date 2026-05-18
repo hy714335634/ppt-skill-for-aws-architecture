@@ -1,0 +1,220 @@
+# Genomics / bioinformatics batch pipeline (replicates reference image 4).
+title: ""
+theme: dark
+layout: manual
+
+groups:
+  # AWS Cloud (centre)
+  - id: cloud
+    kind: aws-cloud-alt
+    label: "AWS Cloud"
+    show_icon: true
+    x: 1.85
+    y: 0.20
+    w: 7.50
+    h: 7.05
+
+  - id: vpc
+    kind: vpc
+    label: "VPC"
+    x: 3.40
+    y: 0.40
+    w: 5.80
+    h: 6.85
+
+  # Workflow box (pink frame)
+  - id: workflow
+    kind: workflow
+    border_color: "E7447C"
+    border_style: solid
+    label: ""
+    show_icon: false
+    x: 3.55
+    y: 1.85
+    w: 5.45
+    h: 1.20
+
+  - id: priv_subnet
+    kind: private-subnet
+    label: "Private subnet"
+    x: 3.55
+    y: 3.30
+    w: 5.50
+    h: 1.85
+
+  - id: compute_env
+    kind: compute-env
+    border_color: "888C90"
+    label: "Compute ENV"
+    label_color: "C5CCD8"
+    label_italic: true
+    show_icon: false
+    x: 3.70
+    y: 5.45
+    w: 5.20
+    h: 1.65
+
+  # Right-side dashed boxes
+  - id: data_source
+    kind: data-source
+    label: "Data Source"
+    border_color: "9DA5AE"
+    border_style: dash
+    label_color: "C5CCD8"
+    label_italic: false
+    show_icon: false
+    x: 9.55
+    y: 0.30
+    w: 3.65
+    h: 1.55
+
+  - id: bi
+    kind: business-intelligence
+    label: "Business Intelligence"
+    border_color: "9DA5AE"
+    border_style: dash
+    label_color: "C5CCD8"
+    show_icon: false
+    x: 9.55
+    y: 2.05
+    w: 3.65
+    h: 1.65
+
+  - id: ai_bd
+    kind: ai-bigdata
+    label: "AI/Big Data"
+    border_color: "9DA5AE"
+    border_style: dash
+    label_color: "C5CCD8"
+    show_icon: false
+    x: 9.55
+    y: 3.85
+    w: 2.45
+    h: 1.65
+
+  - id: report
+    kind: report-generation
+    label: "Report\nGeneration"
+    border_color: "9DA5AE"
+    border_style: dash
+    label_color: "C5CCD8"
+    show_icon: false
+    x: 12.10
+    y: 3.85
+    w: 1.10
+    h: 3.15
+
+nodes:
+  # Outside - left
+  - { id: client_in, icon: client,    label: "Clients", x: 0.05, y: 1.95, size: 0.55 }
+  - { id: client_in2, icon: client,   label: "",        x: 0.55, y: 1.95, size: 0.40 }
+  - { id: client_api, icon: internet, label: "",        x: 0.05, y: 5.00, size: 0.65 }
+
+  # Inside cloud (left edge gates)
+  - { id: s3_in,    icon: s3,        label: "Amazon Simple\nStorage Service", x: 1.95, y: 1.95, size: 0.70 }
+  - { id: lambda_t, icon: lambda,    label: "AWS Lambda",                     x: 1.95, y: 4.30, size: 0.70 }
+  - { id: apigw,    icon: apigateway, label: "Amazon API\nGateway",          x: 1.95, y: 5.85, size: 0.70 }
+
+  # VPC top — Nextflow Server
+  - { id: nextflow, icon: ec2, label: "Nextflow Server", x: 5.65, y: 0.55, size: 0.70 }
+
+  # Workflow boxes — green
+  - { id: seq,      icon: cold-storage,     label: "Sequences",        x: 3.75, y: 2.15, size: 0.50 }
+  - { id: align,    icon: cold-storage,     label: "Alignments",       x: 4.85, y: 2.15, size: 0.50 }
+  - { id: variants, icon: cold-storage,     label: "Variants",         x: 5.95, y: 2.15, size: 0.50 }
+  - { id: annot,    icon: cold-storage,     label: "Annotated\nVariants", x: 7.05, y: 2.15, size: 0.50 }
+  - { id: align_st, icon: cold-storage,     label: "Alignment\nStats",    x: 8.15, y: 2.15, size: 0.50 }
+
+  # AWS Batch row
+  - { id: batch1, icon: batch, label: "AWS Batch", x: 3.75, y: 3.75, size: 0.70, group: priv_subnet }
+  - { id: batch2, icon: batch, label: "AWS Batch", x: 5.05, y: 3.75, size: 0.70, group: priv_subnet }
+  - { id: batch3, icon: batch, label: "AWS Batch", x: 6.35, y: 3.75, size: 0.70, group: priv_subnet }
+  - { id: batch4, icon: batch, label: "AWS Batch", x: 7.65, y: 3.75, size: 0.70, group: priv_subnet }
+
+  # Compute ENV
+  - { id: a_compute, icon: ec2-instances, label: "A (128C 256G)", x: 4.30, y: 6.00, size: 0.70, group: compute_env }
+  - { id: b_compute, icon: ec2-instances, label: "B (512C 2048G)", x: 7.05, y: 6.00, size: 0.70, group: compute_env }
+
+  # Data source
+  - { id: rds_ds,    icon: rds,      label: "Amazon RDS",      x: 9.70, y: 0.65, size: 0.65, group: data_source }
+  - { id: athena_ds, icon: athena,   label: "Amazon Athena",   x: 10.95, y: 0.65, size: 0.65, group: data_source }
+  - { id: ddb_ds,    icon: dynamodb, label: "Amazon DynamoDB", x: 12.20, y: 0.65, size: 0.65, group: data_source }
+
+  # BI
+  - { id: redash,    icon: generic-application, label: "redash",     x: 9.85, y: 2.45, size: 0.40, group: bi }
+  - { id: metatron,  icon: generic-application, label: "Metatron\nDiscovery", x: 11.20, y: 2.45, size: 0.40, group: bi }
+  - { id: tableau,   icon: generic-application, label: "Tableau",     x: 9.85, y: 3.10, size: 0.40, group: bi }
+  - { id: superset,  icon: generic-application, label: "Superset",    x: 11.20, y: 3.10, size: 0.40, group: bi }
+
+  # AI/BD
+  - { id: sagemaker, icon: sagemaker, label: "Amazon\nSageMaker", x: 9.85, y: 4.30, size: 0.55, group: ai_bd }
+  - { id: emr,       icon: emr,       label: "Amazon EMR",        x: 11.05, y: 4.30, size: 0.55, group: ai_bd }
+
+  # Report Generation column
+  - { id: sns,       icon: sns,       label: "Amazon SNS",   x: 12.30, y: 4.10, size: 0.55, group: report }
+  - { id: lambda2,   icon: lambda,    label: "AWS Lambda",   x: 12.30, y: 5.10, size: 0.55, group: report }
+  - { id: sqs,       icon: sqs,       label: "Amazon SQS",   x: 12.30, y: 6.20, size: 0.55, group: report }
+
+  # Bottom - S3 + Glacier (data store)
+  - { id: s3_out,    icon: s3,      label: "Amazon Simple\nStorage Service", x: 8.50, y: 6.45, size: 0.65 }
+  - { id: glacier,   icon: glacier, label: "Amazon S3 Glacier",              x: 9.95, y: 6.45, size: 0.65 }
+
+edges:
+  # Upload + RestFul API
+  - { from: client_in, to: s3_in, label: "Upload FILE", label_color: "39B5FF", label_italic: true,
+      label_bg: transparent, color: "39B5FF" }
+  - { from: client_api, to: apigw, label: "RestFul API", label_color: "39B5FF", label_italic: true,
+      label_bg: transparent, color: "39B5FF" }
+  # Trigger lambda
+  - { from: s3_in,  to: lambda_t, label: "Event Trigger", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, color: "FF9900", direction: "->" }
+  - { from: lambda_t, to: nextflow, label: "Invoke", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, color: "39B5FF", routing: orthogonal, from_anchor: right, to_anchor: bottom }
+  - { from: nextflow, to: align_st, label: "Nextflow Run", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, color: "FF9900", routing: orthogonal, from_anchor: right, to_anchor: top }
+
+  # Workflow chain (orange arrows)
+  - { from: seq, to: align, label: "Align\nReads", label_color: "39FF14", label_size: 7,
+      label_bg: transparent, color: "39FF14", from_anchor: right, to_anchor: left }
+  - { from: align, to: variants, label: "Call\nVariants", label_color: "39FF14", label_size: 7,
+      label_bg: transparent, color: "39FF14", from_anchor: right, to_anchor: left }
+  - { from: variants, to: annot, label: "Annotate\nVariants", label_color: "39FF14", label_size: 7,
+      label_bg: transparent, color: "39FF14", from_anchor: right, to_anchor: left }
+  - { from: align, to: align_st, label: "Alignment\nQC", label_color: "39FF14", label_size: 7,
+      label_bg: transparent, color: "39FF14", routing: orthogonal, from_anchor: top, to_anchor: left }
+
+  # Workflow steps -> AWS Batch
+  - { from: seq, to: batch1, color: "FF9900", routing: orthogonal, from_anchor: bottom, to_anchor: top }
+  - { from: align, to: batch2, color: "FF9900", routing: orthogonal, from_anchor: bottom, to_anchor: top }
+  - { from: variants, to: batch3, color: "FF9900", routing: orthogonal, from_anchor: bottom, to_anchor: top }
+  - { from: annot, to: batch4, color: "FF9900", routing: orthogonal, from_anchor: bottom, to_anchor: top }
+
+  # Batch -> Compute ENV (orange double-headed)
+  - { from: batch1, to: a_compute, color: "FF9900", direction: "<->", routing: orthogonal,
+      from_anchor: bottom, to_anchor: top }
+  - { from: batch2, to: a_compute, color: "FF9900", direction: "<->", routing: orthogonal,
+      from_anchor: bottom, to_anchor: top }
+  - { from: batch3, to: b_compute, color: "FF9900", direction: "<->", routing: orthogonal,
+      from_anchor: bottom, to_anchor: top }
+  - { from: batch4, to: b_compute, color: "FF9900", direction: "<->", routing: orthogonal,
+      from_anchor: bottom, to_anchor: top }
+
+  # Nextflow -> Data source (Meta-data)
+  - { from: nextflow, to: rds_ds, label: "Meta-data", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, color: "39B5FF", routing: orthogonal, from_anchor: right, to_anchor: left }
+
+  # Compute ENV -> S3 (read/write)
+  - { from: b_compute, to: s3_out, label: "read/write", label_color: "39B5FF", label_italic: true,
+      label_bg: transparent, color: "39B5FF", routing: orthogonal, from_anchor: bottom, to_anchor: top }
+  # S3 -> Glacier lifecycle
+  - { from: s3_out, to: glacier, label: "Lifecycle\nmgmt", label_color: "39B5FF", label_italic: true,
+      label_bg: transparent, color: "39B5FF", direction: "<->" }
+
+  # AI/BD <- S3
+  - { from: s3_out, to: sagemaker, color: "39B5FF", routing: orthogonal, from_anchor: top, to_anchor: bottom }
+  # BI -> data source
+  - { from: redash, to: athena_ds, color: "39B5FF", direction: "<->", routing: orthogonal,
+      from_anchor: top, to_anchor: bottom }
+  # Report Generation -> ddb
+  - { from: lambda2, to: ddb_ds, color: "39B5FF", routing: orthogonal,
+      from_anchor: top, to_anchor: bottom }

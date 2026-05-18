@@ -1,0 +1,191 @@
+# Simple 2-AZ HA web app with embedded route tables (replicates image 3).
+title: ""
+theme: dark
+layout: manual
+
+groups:
+  - id: cloud
+    kind: aws-cloud-alt
+    label: "AWS Cloud"
+    show_icon: true
+    x: 1.30
+    y: 0.30
+    w: 11.70
+    h: 6.85
+
+  - id: vpc
+    kind: vpc
+    label: "VPC"
+    x: 1.65
+    y: 1.40
+    w: 11.10
+    h: 5.65
+
+  # AZ a label
+  - id: az_a_label
+    kind: custom
+    label: "Availability Zone a"
+    border_color: "00B7E9"
+    border_style: dash
+    label_color: "00B7E9"
+    show_icon: false
+    x: 3.40
+    y: 1.55
+    w: 4.20
+    h: 0.30
+
+  - id: az_b_label
+    kind: custom
+    label: "Availability Zone b"
+    border_color: "00B7E9"
+    border_style: dash
+    label_color: "00B7E9"
+    show_icon: false
+    x: 7.65
+    y: 1.55
+    w: 4.20
+    h: 0.30
+
+  - id: pub_a
+    kind: public-subnet
+    label: "Public subnet"
+    x: 1.85
+    y: 1.95
+    w: 1.60
+    h: 4.95
+
+  - id: priv_a_app
+    kind: private-subnet
+    label: "Private subnet"
+    x: 3.55
+    y: 1.95
+    w: 1.85
+    h: 1.85
+
+  - id: priv_b_app
+    kind: private-subnet
+    label: "Private subnet"
+    x: 5.50
+    y: 1.95
+    w: 1.85
+    h: 1.85
+
+  - id: priv_a_db
+    kind: private-subnet
+    label: "Private subnet"
+    x: 3.55
+    y: 4.05
+    w: 1.85
+    h: 1.85
+
+  - id: priv_b_db
+    kind: private-subnet
+    label: "Private subnet"
+    x: 5.50
+    y: 4.05
+    w: 2.20
+    h: 1.85
+
+  # ASG overlay across both app subnets
+  - id: asg
+    kind: auto-scaling-group
+    label: "Auto Scaling Group"
+    spans: [priv_a_app, priv_b_app]
+    border_color: "ED7100"
+    border_style: dash
+    label_color: "ED7100"
+    label_italic: true
+    show_icon: false
+    pad: 0.20
+
+nodes:
+  # Outside cloud
+  - { id: users,   icon: users,    label: "Users",   x: 0.05, y: 0.50, size: 0.65 }
+  - { id: net,     icon: internet, label: "Internet", x: 0.05, y: 1.85, size: 0.70 }
+  - { id: client1, icon: client,   label: "Client",   x: 0.05, y: 5.55, size: 0.55 }
+  - { id: client2, icon: client,   label: "Client",   x: 0.85, y: 5.55, size: 0.55 }
+
+  # IGW + ELB + NAT + VPN inside public subnet column
+  - { id: igw,    icon: internet-gateway, label: "Internet\nGateway (IGW)", x: 1.45, y: 2.55, size: 0.65 }
+  - { id: nginx,  icon: alb,              label: "Elastic Load\nBalancing (NGINX)", x: 1.95, y: 2.40, size: 0.65, group: pub_a }
+  - { id: natgw,  icon: nat-gateway,      label: "VPC NAT\nGateway",        x: 1.95, y: 4.20, size: 0.65, group: pub_a }
+  - { id: vpnsrv, icon: ec2,              label: "VPN Server / Bastion",   x: 1.95, y: 5.85, size: 0.65, group: pub_a }
+
+  # App servers
+  - { id: app1, icon: ec2, label: "App Server", x: 3.95, y: 2.45, size: 0.65, group: priv_a_app }
+  - { id: app2, icon: ec2, label: "App Server", x: 5.85, y: 2.45, size: 0.65, group: priv_b_app }
+
+  # DB
+  - { id: rds_master,  icon: rds,         label: "Amazon RDS\nMaster",        x: 3.95, y: 4.55, size: 0.65, group: priv_a_db }
+  - { id: rds_replica, icon: rds,         label: "Amazon RDS\nReplica slave", x: 5.55, y: 4.55, size: 0.65, group: priv_b_db }
+  - { id: redis,       icon: elasticache, label: "ElastiCache\nfor Redis",     x: 6.85, y: 4.55, size: 0.65, group: priv_b_db }
+
+  # Right-side data
+  - { id: s3,  icon: s3,  label: "Amazon S3", x: 9.10, y: 1.80, size: 0.70 }
+  - { id: efs, icon: efs, label: "Amazon Elastic\nFile System", x: 9.10, y: 3.45, size: 0.70 }
+
+edges:
+  - { from: users, to: net, direction: "-" }
+  - { from: net, to: igw, routing: orthogonal, from_anchor: right, to_anchor: left }
+  - { from: igw, to: nginx, routing: orthogonal, from_anchor: bottom, to_anchor: top }
+  - { from: nginx, to: app1, label: "Load balancing", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, routing: orthogonal, from_anchor: right, to_anchor: left }
+  - { from: nginx, to: app2, routing: orthogonal, from_anchor: right, to_anchor: left }
+
+  # NAT
+  - { from: natgw, to: net, label: "NAT Address Switch", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, routing: waypoints, waypoints: [[1.05, 4.40], [1.05, 2.10]],
+      from_anchor: left, to_anchor: left }
+
+  # VPN bastion path
+  - { from: client1, to: vpnsrv, label: "Operations", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, style: dash, routing: orthogonal, from_anchor: right, to_anchor: left }
+  - { from: client2, to: vpnsrv, style: dash, routing: orthogonal, from_anchor: right, to_anchor: left }
+
+  # App data flow
+  - { from: app1, to: app2, label: "Data sync", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, direction: "<->", from_anchor: right, to_anchor: left }
+  - { from: app2, to: efs, routing: orthogonal, from_anchor: right, to_anchor: left }
+  - { from: app1, to: rds_master, routing: orthogonal, from_anchor: bottom, to_anchor: top }
+  - { from: app2, to: redis, routing: orthogonal, from_anchor: bottom, to_anchor: top }
+  - { from: rds_master, to: rds_replica, style: dash, color: "EB6F6F" }
+
+  # Bastion access fans
+  - { from: vpnsrv, to: app1, style: dash, color: "EB6F6F", routing: orthogonal,
+      from_anchor: right, to_anchor: bottom }
+  - { from: vpnsrv, to: rds_master, style: dash, color: "EB6F6F", routing: orthogonal,
+      from_anchor: right, to_anchor: left }
+  - { from: vpnsrv, to: rds_replica, style: dash, color: "EB6F6F", routing: orthogonal,
+      from_anchor: right, to_anchor: bottom }
+  - { from: vpnsrv, to: redis, style: dash, color: "EB6F6F", routing: orthogonal,
+      from_anchor: right, to_anchor: bottom }
+
+tables:
+  - id: rt_public
+    title: ""
+    columns: ["Destination", "Gateway"]
+    rows:
+      - ["172.31.0.0/16", "local"]
+      - ["0.0.0.0/0", "Internet Gateway"]
+    x: 4.85
+    y: 0.55
+    w: 2.85
+    h: 0.85
+    font_size: 9
+    header_bg: "424F60"
+    body_bg: "2A3645"
+    border_color: "EB6F6F"
+
+  - id: rt_private
+    columns: ["Destination", "Gateway"]
+    rows:
+      - ["172.31.0.0/16", "local"]
+      - ["0.0.0.0/0", "NAT Gateway"]
+    x: 9.85
+    y: 5.30
+    w: 2.85
+    h: 0.85
+    font_size: 9
+    header_bg: "424F60"
+    body_bg: "2A3645"
+    border_color: "EB6F6F"

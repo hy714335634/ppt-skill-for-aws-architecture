@@ -1,0 +1,170 @@
+# VDI / Workspaces architecture (replicates reference image 1)
+# Manual layout to match the reference grid: clients on the left, VPC in the
+# middle, side-services (S3 / CloudWatch / CloudTrail / IAM / CodeCommit) on
+# the right, and an Office group below the external clients.
+title: ""
+theme: dark
+layout: manual
+
+groups:
+  - id: cloud
+    kind: aws-cloud-alt        # green-stroked cloud border (image 1 style)
+    label: "AWS Cloud"
+    x: 3.6
+    y: 0.85
+    w: 8.2
+    h: 6.3
+
+  - id: vpc
+    kind: vpc
+    label: "VPC"
+    x: 4.6
+    y: 1.45
+    w: 6.6
+    h: 5.5
+
+  - id: pub_subnet
+    kind: public-subnet
+    label: "Public subnet"
+    x: 4.85
+    y: 2.05
+    w: 4.0
+    h: 1.95
+
+  - id: ngfw
+    kind: next-gen-firewall
+    border_color: "888C90"
+    border_style: solid
+    label: "Next Generation Firewall"
+    label_color: "C5CCD8"
+    label_size: 9
+    label_italic: true
+    show_icon: false
+    x: 5.05
+    y: 2.30
+    w: 3.65
+    h: 1.55
+
+  - id: priv_subnet
+    kind: private-subnet
+    label: "Private subnet"
+    x: 4.85
+    y: 4.10
+    w: 4.0
+    h: 2.65
+
+  - id: workspaces_box
+    kind: workspaces
+    border_color: "9DA5AE"
+    border_style: dash
+    label: "Workspaces"
+    label_color: "C5CCD8"
+    label_size: 9
+    label_italic: true
+    show_icon: false
+    x: 4.95
+    y: 4.45
+    w: 3.80
+    h: 2.10
+
+  - id: opening_env
+    kind: operating-env
+    border_color: "888C90"
+    border_style: solid
+    label: "Operating ENV"
+    label_color: "C5CCD8"
+    label_size: 9
+    label_italic: true
+    show_icon: false
+    x: 9.05
+    y: 2.05
+    w: 2.05
+    h: 4.70
+
+  - id: office
+    kind: office
+    label: "Office"
+    border_color: "9DA5AE"
+    border_style: dash
+    label_color: "9DA5AE"
+    label_italic: false
+    show_icon: false
+    x: 0.20
+    y: 4.30
+    w: 2.85
+    h: 2.80
+
+nodes:
+  # External clients (left column)
+  - { id: client1, icon: client, label: "Client", group: null, x: 0.95, y: 0.95, size: 0.80 }
+  - { id: client2, icon: client, label: "Client", x: 0.95, y: 2.55, size: 0.80 }
+  # Web on top of cloud
+  - { id: web,    icon: internet, label: "Web", x: 6.5, y: 0.05, size: 0.85 }
+  # Office clients
+  - { id: of_c1, icon: client, label: "Client", x: 0.40, y: 4.50, size: 0.55 }
+  - { id: of_c2, icon: client, label: "Client", x: 1.85, y: 4.50, size: 0.55 }
+  - { id: of_c3, icon: client, label: "Client", x: 0.40, y: 5.85, size: 0.55 }
+  - { id: of_c4, icon: client, label: "Client", x: 1.85, y: 5.85, size: 0.55 }
+  - { id: wifi,  icon: router,  label: "",       x: 2.95, y: 5.30, size: 0.55 }
+  # Public subnet — Internet GW + VPN + NAT
+  - { id: igw,   icon: internet-gateway, label: "Internet\ngateway", x: 4.10, y: 2.95, size: 0.62 }
+  - { id: vpn,   icon: client-vpn,       label: "VPN",               x: 5.40, y: 2.65, size: 0.70, group: ngfw }
+  - { id: nat,   icon: nat-gateway,      label: "NAT + Web Filter",  x: 7.05, y: 2.65, size: 0.70, group: ngfw }
+
+  # Private subnet — Workspaces (3)
+  - { id: ws1, icon: workspaces, label: "Amazon\nWorkSpaces", x: 5.10, y: 5.00, size: 0.70, group: workspaces_box }
+  - { id: ws2, icon: workspaces, label: "Amazon\nWorkSpaces", x: 6.30, y: 5.00, size: 0.70, group: workspaces_box }
+  - { id: ws3, icon: workspaces, label: "Amazon\nWorkSpaces", x: 7.50, y: 5.00, size: 0.70, group: workspaces_box }
+
+  # Operating ENV — Cloud9 + Ubuntu + Centos
+  - { id: cloud9, icon: cloud9,        label: "AWS Cloud9", x: 9.55, y: 2.40, size: 0.70, group: opening_env }
+  - { id: ubuntu, icon: ec2-instance,  label: "Ubuntu",     x: 9.55, y: 3.85, size: 0.70, group: opening_env }
+  - { id: centos, icon: ec2-instance,  label: "Centos",     x: 9.55, y: 5.30, size: 0.70, group: opening_env }
+
+  # Endpoint helper inside VPC bottom-right
+  - { id: ep, icon: vpc-endpoints, label: "Endpoints", x: 11.10, y: 5.55, size: 0.65 }
+
+  # Right side stack outside the cloud
+  - { id: s3,         icon: s3,         label: "Amazon S3",                 x: 12.20, y: 1.10, size: 0.70 }
+  - { id: cw,         icon: cloudwatch, label: "CloudWatch",                x: 12.20, y: 2.40, size: 0.70 }
+  - { id: ctrail,     icon: cloudtrail, label: "AWS CloudTrail",            x: 12.20, y: 3.65, size: 0.70 }
+  - { id: iam,        icon: iam,        label: "AWS Identity and\nAccess Management",   x: 12.20, y: 4.95, size: 0.70 }
+  - { id: codecommit, icon: codecommit, label: "AWS\nCodeCommit",           x: 12.20, y: 6.20, size: 0.70 }
+
+edges:
+  # Login flows from external clients
+  - { from: client1, to: vpn,  label: "Login", label_color: "FF9900", label_italic: true, label_bg: transparent,
+      routing: orthogonal, from_anchor: right, to_anchor: top }
+  - { from: client2, to: vpn,  label: "Login", label_color: "FF9900", label_italic: true, label_bg: transparent,
+      routing: orthogonal, from_anchor: right, to_anchor: top }
+  - { from: wifi,    to: vpn,  label: "Login", label_color: "FF9900", label_italic: true, label_bg: transparent,
+      routing: orthogonal, from_anchor: right, to_anchor: bottom }
+  # Office grid lines
+  - { from: of_c1, to: wifi, style: solid, direction: "-" }
+  - { from: of_c2, to: wifi, style: solid, direction: "-" }
+  - { from: of_c3, to: wifi, style: solid, direction: "-" }
+  - { from: of_c4, to: wifi, style: solid, direction: "-" }
+
+  # NAT to Web (top of slide)
+  - { from: nat, to: web, routing: orthogonal, from_anchor: top, to_anchor: bottom }
+
+  # IP Control Policy
+  - { from: vpn, to: nat, label: "IP Control Policy", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, style: dash, direction: "-" }
+
+  # Workspaces -> Operating ENV
+  - { from: ws3, to: ubuntu, routing: orthogonal, from_anchor: right, to_anchor: left }
+
+  # Endpoints -> CodeCommit
+  - { from: ep, to: codecommit, label: "Interface", label_color: "FF9900", label_italic: true,
+      label_bg: transparent, routing: orthogonal, from_anchor: right, to_anchor: left }
+  # Workspaces -> endpoints
+  - { from: ws3, to: ep, routing: orthogonal, from_anchor: right, to_anchor: left, style: solid }
+  # Operating ENV -> endpoints
+  - { from: centos, to: ep, routing: orthogonal, from_anchor: bottom, to_anchor: top }
+
+  # VPC Flow log
+  - { from: nat, to: s3, label: "VPC Flowlog", label_color: "7CFC00", label_italic: true,
+      label_bg: transparent, color: "7CFC00", routing: waypoints,
+      waypoints: [[12.05, 0.55], [12.55, 0.55]],
+      from_anchor: top, to_anchor: top }

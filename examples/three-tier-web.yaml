@@ -1,0 +1,109 @@
+# 3-tier web application on AWS — auto-layout, dark theme.
+title: "3-Tier Web Application"
+subtitle: "Multi-AZ, with managed RDS and CloudFront"
+description: "End users hit CloudFront -> ALB. Web tier in public subnets, app tier in private, RDS in DB subnets across two AZs."
+theme: dark
+layout: auto
+
+groups:
+  - id: cloud
+    kind: aws-cloud
+    label: "AWS Cloud"
+    direction: row
+  - id: vpc
+    kind: vpc
+    label: "VPC 10.0.0.0/16"
+    parent: cloud
+    direction: row
+  - id: az1
+    kind: az
+    label: "AZ a"
+    parent: vpc
+    direction: column
+  - id: az2
+    kind: az
+    label: "AZ b"
+    parent: vpc
+    direction: column
+  - id: pub1
+    kind: public-subnet
+    label: "Public"
+    parent: az1
+  - id: app1
+    kind: private-subnet
+    label: "App"
+    parent: az1
+  - id: db1
+    kind: private-subnet
+    label: "DB"
+    parent: az1
+  - id: pub2
+    kind: public-subnet
+    label: "Public"
+    parent: az2
+  - id: app2
+    kind: private-subnet
+    label: "App"
+    parent: az2
+  - id: db2
+    kind: private-subnet
+    label: "DB"
+    parent: az2
+
+nodes:
+  - id: user
+    icon: users
+    label: "End Users"
+
+  - id: cdn
+    icon: cloudfront
+    label: "CloudFront"
+
+  - id: assets
+    icon: s3
+    label: "Static Assets"
+
+  - id: alb
+    icon: elastic-load-balancing
+    label: "Application LB"
+    group: vpc
+
+  - id: web1
+    icon: ec2
+    label: "Web Tier"
+    group: pub1
+  - id: app_a
+    icon: ec2
+    label: "App Tier"
+    group: app1
+  - id: rds_primary
+    icon: amazon-rds
+    label: "RDS"
+    sublabel: "Primary"
+    group: db1
+
+  - id: web2
+    icon: ec2
+    label: "Web Tier"
+    group: pub2
+  - id: app_b
+    icon: ec2
+    label: "App Tier"
+    group: app2
+  - id: rds_replica
+    icon: amazon-rds
+    label: "RDS"
+    sublabel: "Standby"
+    group: db2
+
+edges:
+  - { from: user, to: cdn }
+  - { from: cdn, to: alb }
+  - { from: cdn, to: assets, label: "static", style: dash }
+  - { from: alb, to: web1 }
+  - { from: alb, to: web2 }
+  - { from: web1, to: app_a }
+  - { from: web2, to: app_b }
+  - { from: app_a, to: rds_primary }
+  - { from: app_b, to: rds_primary }
+  - { from: rds_primary, to: rds_replica, direction: "<->", style: dash, label: "replication" }
