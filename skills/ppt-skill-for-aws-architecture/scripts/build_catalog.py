@@ -14,7 +14,7 @@ import shutil
 from pathlib import Path
 
 SRC = Path("/Users/qangz/Downloads/Asset-Package_07312025.49d3aab7f9e6131e51ade8f7c6c8b961ee7d3bb1")
-DST = Path.home() / ".claude/skills/aws-architecture/assets"
+DST = Path(__file__).resolve().parent.parent / "assets"
 
 CATEGORY_RE = re.compile(r"^(?:Arch|Res)_(.+)$")
 

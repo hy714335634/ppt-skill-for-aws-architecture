@@ -1,6 +1,8 @@
-# aws-architecture — Claude Code skill for AWS architecture diagrams in PowerPoint
+# ppt-skill-for-aws-architecture
 
 A [Claude Code](https://claude.com/claude-code) skill that generates `.pptx` AWS architecture diagrams from a YAML or JSON spec. It uses the **official AWS Architecture Icons** (2025-07-31 release), supports the official group containers (VPC, AZ, subnet, AWS Cloud, account, ASG…), and renders connectors with arrowheads, orthogonal routing, waypoints, and italic annotation labels — the same visual vocabulary AWS uses in its reference diagrams.
+
+The skill itself lives under `skills/ppt-skill-for-aws-architecture/` so this repo can hold one or more skills side-by-side in the future.
 
 > **What this is:** a deck generator. Hand it a spec, get a `.pptx`. The shapes are real PowerPoint shapes — fully editable in PowerPoint or Keynote afterwards.
 >
@@ -33,11 +35,14 @@ Most PowerPoint AWS diagrams are hand-drawn pixel-by-pixel. That's slow, inconsi
 ## Install / setup
 
 ```bash
-# 1. Clone or place the directory under ~/.claude/skills/aws-architecture for the
-#    Claude Code skill loader to pick it up automatically.
-ln -s "$(pwd)" ~/.claude/skills/aws-architecture
+# 1. Clone the repo, then symlink the skill directory into your Claude Code
+#    skills folder so the loader picks it up automatically.
+git clone https://github.com/hy714335634/ppt-skill-for-aws-architecture.git
+cd ppt-skill-for-aws-architecture
+ln -s "$(pwd)/skills/ppt-skill-for-aws-architecture" \
+      ~/.claude/skills/ppt-skill-for-aws-architecture
 
-# 2. Python deps (the project venv at .venv already includes these):
+# 2. Python deps:
 pip install python-pptx pyyaml lxml
 
 # 3. (Optional, for visual verification) LibreOffice + poppler:
@@ -45,21 +50,25 @@ brew install --cask libreoffice
 brew install poppler
 ```
 
-The skill is self-contained: `SKILL.md` is the entry point, `catalog.json` indexes the icons, `assets/` ships the PNGs, and `scripts/` holds the renderer.
+The skill is self-contained: under `skills/ppt-skill-for-aws-architecture/`, `SKILL.md` is the entry point, `catalog.json` indexes the icons, `assets/` ships the PNGs, and `scripts/` holds the renderer.
 
 ## Quick start
 
+All commands run from the repo root. The skill scripts use paths relative to themselves so this works regardless of CWD.
+
 ```bash
+SKILL=skills/ppt-skill-for-aws-architecture
+
 # Validate (cheap, catches typos before render)
-python scripts/validate.py examples/three-tier-web.yaml
+python "$SKILL/scripts/validate.py" "$SKILL/examples/three-tier-web.yaml"
 
 # Render a YAML spec to .pptx
-python scripts/render.py examples/three-tier-web.yaml -o /tmp/three-tier.pptx
+python "$SKILL/scripts/render.py" "$SKILL/examples/three-tier-web.yaml" -o /tmp/three-tier.pptx
 
 # Browse the icon catalog
-python scripts/list_icons.py                    # categories overview
-python scripts/list_icons.py compute            # icons in a category
-python scripts/list_icons.py --search dynamodb  # find by name
+python "$SKILL/scripts/list_icons.py"                      # categories overview
+python "$SKILL/scripts/list_icons.py" compute              # icons in a category
+python "$SKILL/scripts/list_icons.py" --search dynamodb    # find by name
 
 # Visually verify (recommended)
 soffice --headless --convert-to pdf /tmp/three-tier.pptx
@@ -126,8 +135,9 @@ Six end-to-end specs in `examples/`:
 Each is a few seconds to render:
 
 ```bash
-for f in examples/*.yaml; do
-  python scripts/render.py "$f" -o "/tmp/$(basename "${f%.yaml}").pptx"
+SKILL=skills/ppt-skill-for-aws-architecture
+for f in "$SKILL"/examples/*.yaml; do
+  python "$SKILL/scripts/render.py" "$f" -o "/tmp/$(basename "${f%.yaml}").pptx"
 done
 ```
 
@@ -149,38 +159,41 @@ Official AWS Architecture Icons are republished quarterly:
 
 ```bash
 # 1. Download the latest Asset Package from https://aws.amazon.com/architecture/icons/
-# 2. Edit SRC in scripts/build_catalog.py to point at the unzipped directory
+# 2. Edit SRC in skills/ppt-skill-for-aws-architecture/scripts/build_catalog.py
+#    to point at the unzipped directory
 # 3. Rebuild
-python scripts/build_catalog.py
+python skills/ppt-skill-for-aws-architecture/scripts/build_catalog.py
 ```
 
-This rewrites `assets/` and `catalog.json` in place. Bump the `version` in `catalog.json` to match the AWS release date.
+This rewrites `skills/ppt-skill-for-aws-architecture/assets/` and `catalog.json` in place. Bump the `version` in `catalog.json` to match the AWS release date.
 
 ## Repository layout
 
 ```
-aws-architecture/
-├── README.md             # this file
-├── SKILL.md              # Claude Code skill entry: full schema + workflow
-├── catalog.json          # icon name -> path index (822 icons, 238 aliases)
-├── assets/
-│   ├── services/         # 307 PNG @64px (Compute, Database, Networking, ...)
-│   ├── resources/        # 477 PNG @48px (sub-resources: EC2 Instance, Lambda Function, ...)
-│   ├── groups/           # 13 PNG @32px (VPC, Region, Subnet, Account, ...)
-│   └── categories/       # 25 PNG @64px (category overview icons)
-├── scripts/
-│   ├── render.py         # main entry: spec -> .pptx
-│   ├── validate.py       # quick spec linter (no rendering)
-│   ├── list_icons.py     # browse the catalog
-│   ├── aws_catalog.py    # icon name resolver (importable module)
-│   └── build_catalog.py  # one-shot: rebuild catalog.json from an AWS Asset Package
-└── examples/
-    ├── three-tier-web.yaml
-    ├── serverless-api.yaml
-    ├── vdi-workspaces.yaml
-    ├── multi-az-ha.yaml
-    ├── two-az-ha-simple.yaml
-    └── genomics-pipeline.yaml
+ppt-skill-for-aws-architecture/
+├── README.md                                     # this file
+└── skills/
+    └── ppt-skill-for-aws-architecture/
+        ├── SKILL.md              # Claude Code skill entry: full schema + workflow
+        ├── catalog.json          # icon name -> path index (822 icons, 238 aliases)
+        ├── assets/
+        │   ├── services/         # 307 PNG @64px (Compute, Database, Networking, ...)
+        │   ├── resources/        # 477 PNG @48px (sub-resources: EC2 Instance, Lambda Function, ...)
+        │   ├── groups/           # 13 PNG @32px (VPC, Region, Subnet, Account, ...)
+        │   └── categories/       # 25 PNG @64px (category overview icons)
+        ├── scripts/
+        │   ├── render.py         # main entry: spec -> .pptx
+        │   ├── validate.py       # quick spec linter (no rendering)
+        │   ├── list_icons.py     # browse the catalog
+        │   ├── aws_catalog.py    # icon name resolver (importable module)
+        │   └── build_catalog.py  # one-shot: rebuild catalog.json from an AWS Asset Package
+        └── examples/
+            ├── three-tier-web.yaml
+            ├── serverless-api.yaml
+            ├── vdi-workspaces.yaml
+            ├── multi-az-ha.yaml
+            ├── two-az-ha-simple.yaml
+            └── genomics-pipeline.yaml
 ```
 
 ## Licensing

@@ -1,5 +1,5 @@
 ---
-name: aws-architecture
+name: ppt-skill-for-aws-architecture
 description: "Use this skill any time the user wants to draw, generate, or update an AWS architecture diagram in PowerPoint (.pptx). Triggers: 'AWS architecture diagram', 'draw an AWS architecture', 'AWS architecture deck/slides/PPT', 'design an AWS solution and diagram it', 'put this AWS architecture in slides', or any request that involves visualizing an AWS solution with services like EC2 / Lambda / S3 / RDS / VPC and AZs / subnets / regions / accounts. The skill takes a natural-language description (or YAML/JSON spec) of the architecture and produces a slide deck with official AWS Architecture icons, group containers (VPC, AZ, subnet, account, region, AWS Cloud), and connectors."
 license: AWS Architecture Icons assets are © Amazon Web Services, Inc. and licensed under the AWS Architecture Icons License (https://aws.amazon.com/architecture/icons/). Skill code itself is unrestricted internal use.
 ---
@@ -245,7 +245,7 @@ Iterate until a clean pass.
 ## Files
 
 ```
-aws-architecture/
+skills/ppt-skill-for-aws-architecture/
 ├── SKILL.md              # this file
 ├── catalog.json          # icon name -> path index (built once from AWS Asset Package)
 ├── assets/
@@ -261,7 +261,11 @@ aws-architecture/
 │   └── build_catalog.py  # one-shot: rebuild catalog.json from an AWS Asset Package
 └── examples/
     ├── three-tier-web.yaml
-    └── serverless-api.yaml
+    ├── serverless-api.yaml
+    ├── vdi-workspaces.yaml
+    ├── multi-az-ha.yaml
+    ├── two-az-ha-simple.yaml
+    └── genomics-pipeline.yaml
 ```
 
 ## Examples
