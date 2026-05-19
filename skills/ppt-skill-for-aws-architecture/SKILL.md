@@ -37,13 +37,20 @@ title: "..."             # large heading
 subtitle: "..."          # small subheading
 description: "..."       # footer caption
 theme: dark | light      # default: dark (AWS Squid Ink navy)
+bg: "232F3E"             # optional hex; overrides theme bg
 layout: auto | manual    # default: auto
+title_height: 0.85       # inches reserved for the title bar (default: 0.85 if subtitle, 0.55 if title only)
+title_size: 28           # title font size in pt (default 28)
+subtitle_size: 13        # subtitle font size in pt (default 13)
 groups: [...]            # group containers (VPC, AZ, subnet, etc.)
 nodes:  [...]            # services/resources/users
 edges:  [...]            # connectors between nodes
+tables: [...]            # inline data tables (route tables, IP plans, etc.)
 ```
 
 Or multiple diagrams in one deck — wrap with `diagrams: [ {...}, {...} ]`.
+
+> **Tip — title vs body collision.** With `layout: manual` and a title, your nodes/groups must start at `y >= title_height + 0.20`. If an icon sits inside the title bar, increase `title_height` or push the y-coords down. `validate.py` warns about this automatically.
 
 ### Groups (containers)
 
@@ -83,6 +90,7 @@ groups:
     label_size: 11              # point size
     label_bold: true            # default true
     label_italic: false
+    label_position: inside-top  # inside-top (default) | outside-top | outside-bottom | hidden
     show_icon: true             # AWS group icon in the corner; default true
 
     # --- Optional ASG-style overlay ---
@@ -101,6 +109,11 @@ Each `kind` ships an official border style (color + dash) and a small icon in th
 2. Use `kind: custom` and set `border_color`, `border_style`, `label`, `label_color` yourself.
 
 **Spanning overlays** (image 2's "Auto Scaling Group" wrapping multiple subnets) are achievable with `spans: [subnet_id_a, subnet_id_b]` — after the underlying subnets get laid out, the spanning group is sized to cover them with a small padding.
+
+**Group label collisions.** A group's label sits *inside the rectangle, near the top* by default. If you pin a child node to the inner-top of the group, the label and icon will overlap. Two ways to fix:
+
+1. **Move the label outside.** Set `label_position: outside-top` (or `outside-bottom`) — the label renders in the gap above/below the rectangle. The group icon follows the label.
+2. **Hide the label.** Set `label_position: hidden` for cosmetic-only containers.
 
 ### Nodes (services)
 
@@ -292,10 +305,14 @@ python scripts/render.py examples/genomics-pipeline.yaml   -o /tmp/genomics.pptx
 
 ## Common pitfalls
 
-- **`Unknown icon 'foo'`** — alias not registered. Run `python scripts/list_icons.py --search foo` to find the canonical key, or add a short alias in `/tmp/build_aws_catalog.py` and rebuild `catalog.json`.
+- **`Unknown icon 'foo'`** — alias not registered. Run `python scripts/list_icons.py --search foo` to find the canonical key, or add a short alias in `scripts/build_catalog.py` and rebuild `catalog.json`.
 - **Subnet group label looks clipped** — the group is too narrow for the label. Shorten (`Public` instead of `Public subnet`) or widen the parent group (fewer siblings, or set `direction: column`).
+- **Group label overlaps a child icon** (e.g. an EC2 pinned at the inside-top of a small subnet) — set `label_position: outside-top` so the label sits above the rectangle.
+- **Title bar overlaps a manually-placed node/group** — increase `title_height` or push the y coordinates of the affected nodes/groups down. `validate.py` warns about this automatically.
+- **CJK / Chinese label clips past its background or over neighbouring nodes** — fixed automatically: the renderer estimates wide-character widths and clamps labels at slide boundaries. If you still see clipping, set an explicit `label_size` and `label_offset` on the edge.
+- **Right-edge nodes get cut off** — node labels are auto-clamped at the slide right edge. If the label still feels squeezed, move the node inward (lower x) or shorten its label.
 - **Edges crossing the diagram** — re-group nodes so closely-connected ones share a parent, or split the architecture across multiple slides (`diagrams: [...]`).
-- **Edge labels stack on top of each other** — only label edges that carry information the diagram doesn't already show. Skip "calls", "request", obvious arrows.
+- **Edge labels stack on top of each other** — only label edges that carry information the diagram doesn't already show. Skip "calls", "request", obvious arrows. For dense areas, use `label_position` (0..1 along the polyline) and `label_offset` to nudge labels apart.
 
 ## Dependencies
 

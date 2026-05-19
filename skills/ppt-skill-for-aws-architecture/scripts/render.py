@@ -131,6 +131,7 @@ class Group:
     label_size: int | None = None
     label_bold: bool = True
     label_italic: bool = False
+    label_position: str = "inside-top"   # inside-top | outside-top | outside-bottom | hidden
     show_icon: bool = True           # show official group icon at top-left
     spans: list[str] = field(default_factory=list)  # ASG-style cross-subnet overlays
 
@@ -192,6 +193,9 @@ class Diagram:
     tables: list[Table] = field(default_factory=list)
     layout: str = "auto"  # auto | manual
     bg: str | None = None   # override theme bg color
+    title_height: float | None = None   # reserved title bar height (inches); default ~0.7
+    title_size: int | None = None       # title font size (pt); default 28
+    subtitle_size: int | None = None    # subtitle font size (pt); default 13
 
 
 # --------------------------------------------------------------------------- #
@@ -214,6 +218,9 @@ def _parse_diagram(d: dict) -> Diagram:
         theme=d.get("theme", "dark"),
         layout=d.get("layout", "auto"),
         bg=d.get("bg"),
+        title_height=d.get("title_height"),
+        title_size=d.get("title_size"),
+        subtitle_size=d.get("subtitle_size"),
     )
 
     for g in d.get("groups", []) or []:
@@ -237,6 +244,7 @@ def _parse_diagram(d: dict) -> Diagram:
             label_size=g.get("label_size"),
             label_bold=bool(g.get("label_bold", True)),
             label_italic=bool(g.get("label_italic", False)),
+            label_position=g.get("label_position", "inside-top"),
             show_icon=bool(g.get("show_icon", True)),
             spans=list(g.get("spans", []) or []),
         )
@@ -553,16 +561,19 @@ def render(diag: Diagram, prs: Presentation, catalog: Catalog) -> None:
     bg.shadow.inherit = False
 
     # Title bar
-    title_h = Inches(0.7) if diag.title else Inches(0)
+    title_h_in = diag.title_height if diag.title_height is not None else (
+        0.85 if (diag.title and diag.subtitle) else 0.55 if diag.title else 0.0
+    )
     if diag.title:
-        tb = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), SLIDE_W - Inches(1), Inches(0.6))
+        tb = slide.shapes.add_textbox(Inches(0.5), Inches(0.18),
+                                      SLIDE_W - Inches(1), Inches(max(title_h_in - 0.05, 0.25)))
         tf = tb.text_frame
-        tf.margin_top = tf.margin_bottom = Inches(0.05)
+        tf.margin_top = tf.margin_bottom = Inches(0.02)
         tf.word_wrap = True
         p = tf.paragraphs[0]
         run = p.add_run()
         run.text = diag.title
-        run.font.size = Pt(28)
+        run.font.size = Pt(diag.title_size if diag.title_size else 28)
         run.font.bold = True
         run.font.color.rgb = theme["fg"]
         run.font.name = "Amazon Ember"
@@ -570,12 +581,12 @@ def render(diag: Diagram, prs: Presentation, catalog: Catalog) -> None:
             p2 = tf.add_paragraph()
             r2 = p2.add_run()
             r2.text = diag.subtitle
-            r2.font.size = Pt(13)
+            r2.font.size = Pt(diag.subtitle_size if diag.subtitle_size else 13)
             r2.font.color.rgb = theme["subtitle_fg"]
             r2.font.name = "Amazon Ember"
 
-    # Diagram body area (inches)
-    body_top = 1.05 if diag.title else 0.5
+    # Diagram body area (inches). body_top accounts for title height.
+    body_top = title_h_in + 0.20 if diag.title else 0.5
     body = (0.6, body_top, 13.333 - 1.2, 7.5 - body_top - 0.4)
 
     # Auto-place
@@ -738,19 +749,41 @@ def _draw_group(slide, g: Group, theme: dict, catalog: Catalog) -> None:
         icon_path = catalog.root / catalog.icons[icon_keys[g.kind]]["path"]
 
     width_in = g._w  # type: ignore[attr-defined]
-    show_icon = bool(icon_path) and width_in >= 1.6 and g.show_icon
-    label_x = x + Inches(0.18)
-    if show_icon and icon_path:
-        icon_w = Inches(0.30)
-        slide.shapes.add_picture(str(icon_path), x + Inches(0.14), y + Inches(0.10),
-                                 width=icon_w, height=icon_w)
-        label_x = x + Inches(0.50)
+    label_position = (g.label_position or "inside-top").lower()
+    if label_position == "hidden":
+        return
 
     label = g.label or style["label"]
+
+    # Decide where the label sits.
+    label_h_in = 0.32
+    if label_position == "outside-top":
+        label_y_in = g._y - label_h_in - 0.04   # type: ignore[attr-defined]
+        if label_y_in < 0.05:
+            label_y_in = 0.05  # don't run off slide
+        icon_y_offset_in = label_y_in
+    elif label_position == "outside-bottom":
+        label_y_in = g._y + g._h + 0.04   # type: ignore[attr-defined]
+        icon_y_offset_in = label_y_in
+    else:  # inside-top
+        label_y_in = g._y + 0.06   # type: ignore[attr-defined]
+        icon_y_offset_in = g._y + 0.10  # type: ignore[attr-defined]
+
+    show_icon = bool(icon_path) and width_in >= 1.6 and g.show_icon
+    label_x_in = g._x + 0.18  # type: ignore[attr-defined]
+    if show_icon and icon_path:
+        icon_w = Inches(0.30)
+        slide.shapes.add_picture(str(icon_path),
+                                 Inches(g._x + 0.14),  # type: ignore[attr-defined]
+                                 Inches(icon_y_offset_in),
+                                 width=icon_w, height=icon_w)
+        label_x_in = g._x + 0.50  # type: ignore[attr-defined]
+
     if not label:
         return
     label_w_in = max(width_in - (0.55 if show_icon else 0.30), 0.5)
-    tb = slide.shapes.add_textbox(label_x, y + Inches(0.06), Inches(label_w_in), Inches(0.32))
+    tb = slide.shapes.add_textbox(Inches(label_x_in), Inches(label_y_in),
+                                  Inches(label_w_in), Inches(label_h_in))
     tf = tb.text_frame
     tf.margin_top = tf.margin_bottom = Inches(0)
     tf.margin_left = tf.margin_right = Inches(0)
@@ -858,10 +891,25 @@ def _draw_node(slide, n: Node, theme: dict, catalog: Catalog) -> None:
     side = Inches(n.size)
     slide.shapes.add_picture(str(path), x, y, width=side, height=side)
 
-    # Label below
-    label_w = Inches(max(n.size + 0.6, 1.4))
+    # Label below — CJK-aware sizing so Chinese labels don't get clipped
+    est = _label_visual_width(n.label or "", pt_size=10) + 0.30
+    if n.sublabel:
+        est = max(est, _label_visual_width(n.sublabel, pt_size=8) + 0.30)
+    label_w_in = max(n.size + 0.6, 1.4, est)
+    n_lines = 1 + (n.label.count("\n") if n.label else 0) + (1 if n.sublabel else 0)
+    label_h_in = 0.30 + 0.18 * (n_lines - 1)
+    label_w = Inches(label_w_in)
     label_x = x - (label_w - side) / 2
-    tb = slide.shapes.add_textbox(label_x, y + side + Inches(0.04), label_w, Inches(0.3))
+    label_y_in = (y / Inches(1)) + n.size + 0.04
+    # Clamp labels at the right slide edge inward so they don't fall off
+    if (label_x / Inches(1)) + label_w_in > 13.333 - 0.05:
+        new_x_in = 13.333 - 0.05 - label_w_in
+        if new_x_in < 0.05:
+            new_x_in = 0.05
+        label_x = Inches(new_x_in)
+    elif (label_x / Inches(1)) < 0.05:
+        label_x = Inches(0.05)
+    tb = slide.shapes.add_textbox(label_x, Inches(label_y_in), label_w, Inches(label_h_in))
     tf = tb.text_frame
     tf.word_wrap = True
     tf.margin_top = tf.margin_bottom = Inches(0)
@@ -914,6 +962,63 @@ def _node_anchor(src: Node, dst: Node, side: str = "auto") -> tuple[float, float
 def _hex_to_rgb(hex_str: str) -> RGBColor:
     h = hex_str.lstrip("#")
     return RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+def _is_wide_char(ch: str) -> bool:
+    """True if ch occupies roughly 2x the width of an ASCII character.
+
+    Covers CJK ideographs, hiragana, katakana, hangul, full-width punctuation,
+    and emoji. Used to size label backgrounds so Chinese/Japanese/Korean text
+    doesn't bleed past its background rectangle.
+    """
+    if not ch:
+        return False
+    o = ord(ch)
+    return (
+        0x1100 <= o <= 0x115F or  # Hangul Jamo
+        0x2E80 <= o <= 0x303E or  # CJK Radicals + Kangxi
+        0x3041 <= o <= 0x33FF or  # Hiragana, Katakana, CJK symbols
+        0x3400 <= o <= 0x4DBF or  # CJK Ext A
+        0x4E00 <= o <= 0x9FFF or  # CJK Unified
+        0xA000 <= o <= 0xA4CF or  # Yi
+        0xAC00 <= o <= 0xD7A3 or  # Hangul Syllables
+        0xF900 <= o <= 0xFAFF or  # CJK Compatibility
+        0xFE30 <= o <= 0xFE4F or  # CJK Compatibility Forms
+        0xFF00 <= o <= 0xFF60 or  # Full-width forms
+        0xFFE0 <= o <= 0xFFE6      # Full-width signs
+    )
+
+
+def _label_visual_width(text: str, pt_size: int = 9) -> float:
+    """Estimate label width in inches for a given font size.
+
+    ASCII chars contribute ~0.075" per char @ 9pt; CJK chars contribute ~0.13".
+    Newlines reset to the longest single line.
+    """
+    base = pt_size / 9.0
+    longest = 0.0
+    for line in text.split("\n"):
+        w = 0.0
+        for ch in line:
+            w += (0.13 if _is_wide_char(ch) else 0.075) * base
+        longest = max(longest, w)
+    return longest
+
+
+def _clamp_label_position(cx: float, cy: float, w: float, h: float) -> tuple[float, float]:
+    """Shift a label centroid inward so its bounding box stays within the slide."""
+    margin = 0.05
+    x = cx - w / 2
+    y = cy - h / 2
+    if x < margin:
+        cx += margin - x
+    elif x + w > 13.333 - margin:
+        cx -= (x + w) - (13.333 - margin)
+    if y < margin:
+        cy += margin - y
+    elif y + h > 7.5 - margin:
+        cy -= (y + h) - (7.5 - margin)
+    return cx, cy
 
 
 def _apply_dash(line, style: str) -> None:
@@ -1057,9 +1162,14 @@ def _draw_edge(slide, e: Edge, diag: Diagram, theme: dict) -> None:
         ox, oy = e.label_offset
         lx += ox
         ly += oy
-        tw = max(0.8, min(3.6, 0.085 * len(e.label) + 0.5))
-        tb = slide.shapes.add_textbox(Inches(lx - tw / 2), Inches(ly - 0.16),
-                                      Inches(tw), Inches(0.32))
+        # CJK-aware width estimate so Chinese labels don't bleed past their bg
+        est = _label_visual_width(e.label, pt_size=e.label_size) + 0.30
+        tw = max(0.8, min(4.5, est))
+        th = 0.32 + 0.18 * (e.label.count("\n"))
+        # Clamp to slide bounds so labels near the edge don't get clipped off
+        lx, ly = _clamp_label_position(lx, ly, tw, th)
+        tb = slide.shapes.add_textbox(Inches(lx - tw / 2), Inches(ly - th / 2),
+                                      Inches(tw), Inches(th))
         tf = tb.text_frame
         tf.margin_top = tf.margin_bottom = Inches(e.label_pad)
         tf.margin_left = tf.margin_right = Inches(0.05)

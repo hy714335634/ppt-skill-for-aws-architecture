@@ -30,6 +30,9 @@ Most PowerPoint AWS diagrams are hand-drawn pixel-by-pixel. That's slow, inconsi
 - **Inline tables** (route tables, IP plans) with header row, custom colours, and free positioning.
 - **Themes**: `dark` (AWS Squid Ink navy, default) and `light`. Both use AWS Smile Orange (`#FF9900`) for accents.
 - **Manual or auto layout** — auto for quick first drafts, manual for pixel-faithful replicas.
+- **Group label positioning** — labels sit `inside-top` (default), `outside-top`, `outside-bottom`, or `hidden` so the rectangle and its child nodes never collide.
+- **CJK-aware labels** — Chinese / Japanese / Korean text gets correctly-sized backgrounds, with auto-clamping at slide edges so right-side nodes don't get clipped.
+- **Manual-layout linting** — `validate.py` warns when a manually-placed node/group overlaps the title bar, runs off the slide, or spans missing groups.
 - **Multi-slide decks** via `diagrams: [...]`.
 
 ## Install / setup

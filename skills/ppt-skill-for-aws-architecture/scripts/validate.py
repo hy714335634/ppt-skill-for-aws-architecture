@@ -27,8 +27,15 @@ def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
 
+    SLIDE_W = 13.333
+    SLIDE_H = 7.5
+
     for i, diag in enumerate(load_input(spec)):
         prefix = f"[diagram {i}: {diag.title or 'untitled'}]"
+        title_h = (diag.title_height if diag.title_height is not None
+                   else (0.85 if (diag.title and diag.subtitle)
+                         else 0.55 if diag.title else 0.0))
+        body_top = title_h + 0.20 if diag.title else 0.0
 
         for nid, node in diag.nodes.items():
             if not catalog.has(node.icon):
@@ -39,10 +46,40 @@ def main() -> int:
                 errors.append(msg)
             if node.group and node.group not in diag.groups:
                 errors.append(f"{prefix} node '{nid}' refers to missing group '{node.group}'.")
+            # Manual layout overflow warnings
+            if diag.layout == "manual" and node.x is not None and node.y is not None:
+                if node.x < 0 or node.y < 0:
+                    warnings.append(f"{prefix} node '{nid}' x/y={node.x:.2f}/{node.y:.2f} starts off-slide.")
+                if node.x + node.size > SLIDE_W:
+                    warnings.append(f"{prefix} node '{nid}' icon extends past right edge "
+                                    f"(x={node.x:.2f} + size={node.size:.2f} > {SLIDE_W}).")
+                if node.y + node.size > SLIDE_H:
+                    warnings.append(f"{prefix} node '{nid}' icon extends past bottom edge.")
+                if diag.title and node.y < body_top - 0.1:
+                    warnings.append(f"{prefix} node '{nid}' y={node.y:.2f} is inside the title bar "
+                                    f"(reserve y >= {body_top:.2f} or set title_height).")
 
         for g in diag.groups.values():
             if g.parent and g.parent not in diag.groups:
                 errors.append(f"{prefix} group '{g.id}' refers to missing parent '{g.parent}'.")
+            # Manual group overflow warnings
+            if all(v is not None for v in (g.x, g.y, g.w, g.h)):
+                if g.x < 0 or g.y < 0:  # type: ignore[operator]
+                    warnings.append(f"{prefix} group '{g.id}' starts off-slide "
+                                    f"(x={g.x:.2f} y={g.y:.2f}).")
+                if g.x + g.w > SLIDE_W + 0.01:  # type: ignore[operator]
+                    warnings.append(f"{prefix} group '{g.id}' extends past right edge "
+                                    f"(x+w={g.x + g.w:.2f} > {SLIDE_W}).")
+                if g.y + g.h > SLIDE_H + 0.01:  # type: ignore[operator]
+                    warnings.append(f"{prefix} group '{g.id}' extends past bottom edge.")
+                if (diag.title and g.y is not None and g.y < body_top - 0.1
+                        and g.label_position == "inside-top"):
+                    warnings.append(f"{prefix} group '{g.id}' y={g.y:.2f} is inside the title bar "
+                                    f"(reserve y >= {body_top:.2f}, set title_height, "
+                                    f"or use label_position: outside-top).")
+            for sid in g.spans:
+                if sid not in diag.groups:
+                    errors.append(f"{prefix} group '{g.id}' spans missing group '{sid}'.")
 
         for e in diag.edges:
             for endpoint in (e.source, e.target):
